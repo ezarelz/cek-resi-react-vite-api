@@ -52,16 +52,19 @@ export function useTracking(): UseTrackingReturn {
       const apiKey = import.meta.env.VITE_KLIKRESI_API_KEY;
 
       // In dev: API key is required for Vite proxy
-      // In production: Serverless function uses its own env var, but we can still send it
+      // In production: We send it directly to KlikResi
       const headers: HeadersInit = {};
       if (apiKey && apiKey !== 'your_api_key_here') {
         headers['x-api-key'] = apiKey;
       }
 
-      // Dev: Vite proxy forwards /api to https://klikresi.com
-      // Production: Vercel serverless function handles /api/trackings/...
+      // Option 1: Direct API call in production to bypass Cloudflare blocking on Vercel
+      const baseUrl = import.meta.env.PROD
+        ? 'https://klikresi.com/api'
+        : '/api';
+
       const response = await fetch(
-        `/api/trackings/${encodeURIComponent(
+        `${baseUrl}/trackings/${encodeURIComponent(
           awb
         )}/couriers/${encodeURIComponent(courier)}`,
         {
