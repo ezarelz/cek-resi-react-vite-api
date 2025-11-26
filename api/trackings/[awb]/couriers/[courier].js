@@ -30,11 +30,37 @@ export default async function handler(req, res) {
       }
     );
 
+    // Check content type before parsing
+    const contentType = response.headers.get('content-type');
+    const isJson = contentType && contentType.includes('application/json');
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
+      let errorDetail = response.statusText;
+
+      if (isJson) {
+        const errorData = await response.json().catch(() => ({}));
+        errorDetail = errorData.message || response.statusText;
+      } else {
+        // If not JSON, get text response for debugging
+        const textResponse = await response.text();
+        errorDetail = `API returned non-JSON response: ${textResponse.substring(
+          0,
+          200
+        )}`;
+      }
+
       return res.status(response.status).json({
         error: 'Failed to fetch tracking data',
-        detail: errorData.message || response.statusText,
+        detail: errorDetail,
+      });
+    }
+
+    // Validate JSON response
+    if (!isJson) {
+      const textResponse = await response.text();
+      return res.status(500).json({
+        error: 'Invalid API response',
+        detail: `Expected JSON but received: ${textResponse.substring(0, 200)}`,
       });
     }
 

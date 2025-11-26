@@ -70,10 +70,32 @@ export function useTracking(): UseTrackingReturn {
         }
       );
 
+      // Check content type before parsing
+      const contentType = response.headers.get('content-type');
+      const isJson = contentType && contentType.includes('application/json');
+
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+        let errorMessage = `Failed to track package: ${response.statusText}`;
+
+        if (isJson) {
+          const errorData = await response.json().catch(() => ({}));
+          errorMessage = errorData.detail || errorData.message || errorMessage;
+        } else {
+          const textResponse = await response.text();
+          errorMessage = `Server error: ${textResponse.substring(0, 200)}`;
+        }
+
+        throw new Error(errorMessage);
+      }
+
+      // Validate JSON response
+      if (!isJson) {
+        const textResponse = await response.text();
         throw new Error(
-          errorData.message || `Failed to track package: ${response.statusText}`
+          `Invalid response format. Expected JSON but received: ${textResponse.substring(
+            0,
+            200
+          )}`
         );
       }
 

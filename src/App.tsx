@@ -30,7 +30,7 @@ function App() {
         <div className='header-content'>
           <h1>
             <Package2 size={32} />
-            Track Resi
+            Cek Resi - Tracking Resi
           </h1>
           <ThemeToggle />
         </div>
