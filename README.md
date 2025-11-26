@@ -97,18 +97,41 @@ tsconfig.node.json
 ## 🔧 API Usage
 
 This project uses **KlikResi API (klikresi.com)** as the shipment tracking provider.
-All tracking requests are sent through the KlikResi endpoint defined in your environment variables.
+
+### Deployment Options
+
+#### Option 1: Vercel Serverless Functions (Default)
+- Uses Vercel serverless functions in `/api` folder
+- Set `VITE_KLIKRESI_API_KEY` in Vercel environment variables
+- May encounter Cloudflare blocking in production
+
+#### Option 2: Railway Proxy Server (Recommended for Production)
+- Deploy the proxy server in `backend-proxy/` folder to Railway
+- Better at bypassing Cloudflare protection
+- See `backend-proxy/README.md` for detailed setup instructions
+
+**Quick Setup:**
+1. Deploy `backend-proxy` to Railway
+2. Set `VITE_API_BASE_URL` in Vercel to your Railway proxy URL
+3. Set `KLIKRESI_API_KEY` in Railway environment variables
+
+### Environment Variables
+
+**For Vercel (Option 1):**
+- `VITE_KLIKRESI_API_KEY`: Your KlikResi API key
+
+**For Railway Proxy (Option 2):**
+- `VITE_API_BASE_URL`: Railway proxy URL (e.g., `https://your-proxy.railway.app`)
+- Railway: `KLIKRESI_API_KEY`: Your KlikResi API key
+
+### Customization
 
 If you want to customize or modify the API logic, you can update the related files in:
 
 ```
 /src/hooks/      # Hook that manages API calls and state
-```
-
-or create a new file :
-
-```
-/src/lib/        # API client or fetch functions
+/api/            # Vercel serverless functions
+/backend-proxy/  # Railway proxy server
 ```
 
 You can also switch to another API provider by adjusting the request handler accordingly.

@@ -49,29 +49,36 @@ export function useTracking(): UseTrackingReturn {
     setTrackingData(null);
 
     try {
-      const apiKey = import.meta.env.VITE_KLIKRESI_API_KEY;
+      // Determine API endpoint
+      // If VITE_API_BASE_URL is set (Railway proxy), use it
+      // Otherwise, use /api (Vercel serverless function or Vite proxy for dev)
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
-      // In dev: API key is required for Vite proxy
-      // In production: We send it directly to KlikResi
+      let apiUrl: string;
       const headers: HeadersInit = {};
-      if (apiKey && apiKey !== 'your_api_key_here') {
-        headers['x-api-key'] = apiKey;
+
+      if (apiBaseUrl) {
+        // Use Railway proxy server
+        // Endpoint: /track?awb=XXX&courier=YYY
+        apiUrl = `${apiBaseUrl}/track?awb=${encodeURIComponent(
+          awb
+        )}&courier=${encodeURIComponent(courier)}`;
+      } else {
+        // Use Vercel serverless function or Vite proxy
+        // Endpoint: /api/trackings/XXX/couriers/YYY
+        const apiKey = import.meta.env.VITE_KLIKRESI_API_KEY;
+        if (apiKey && apiKey !== 'your_api_key_here') {
+          headers['x-api-key'] = apiKey;
+        }
+        apiUrl = `/api/trackings/${encodeURIComponent(
+          awb
+        )}/couriers/${encodeURIComponent(courier)}`;
       }
 
-      // Option 1: Direct API call in production to bypass Cloudflare blocking on Vercel
-      const baseUrl = import.meta.env.PROD
-        ? 'https://klikresi.com/api'
-        : '/api';
-
-      const response = await fetch(
-        `${baseUrl}/trackings/${encodeURIComponent(
-          awb
-        )}/couriers/${encodeURIComponent(courier)}`,
-        {
-          method: 'GET',
-          headers,
-        }
-      );
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers,
+      });
 
       // Check content type before parsing
       const contentType = response.headers.get('content-type');
