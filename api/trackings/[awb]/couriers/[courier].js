@@ -17,6 +17,7 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Use realistic browser headers to bypass Cloudflare protection
     const response = await fetch(
       `https://klikresi.com/api/trackings/${encodeURIComponent(
         awb
@@ -24,8 +25,17 @@ export default async function handler(req, res) {
       {
         headers: {
           'x-api-key': API_KEY,
-          'User-Agent': 'curl/8.0',
-          Accept: '*/*',
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          Accept: 'application/json, text/plain, */*',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Accept-Encoding': 'gzip, deflate, br',
+          Referer: 'https://klikresi.com/',
+          Origin: 'https://klikresi.com',
+          Connection: 'keep-alive',
+          'Sec-Fetch-Dest': 'empty',
+          'Sec-Fetch-Mode': 'cors',
+          'Sec-Fetch-Site': 'same-origin',
         },
       }
     );
@@ -43,6 +53,22 @@ export default async function handler(req, res) {
       } else {
         // If not JSON, get text response for debugging
         const textResponse = await response.text();
+
+        // Check if it's a Cloudflare challenge page
+        if (
+          textResponse.includes('Just a moment') ||
+          textResponse.includes('cf-browser-verification') ||
+          textResponse.includes('challenge-platform')
+        ) {
+          return res.status(503).json({
+            error: 'Cloudflare protection detected',
+            detail:
+              'The API is protected by Cloudflare and is blocking automated requests. This may require manual verification or a different approach to access the API.',
+            suggestion:
+              'Try using the API directly with curl or Postman, or contact the API provider for server-to-server access.',
+          });
+        }
+
         errorDetail = `API returned non-JSON response: ${textResponse.substring(
           0,
           200
@@ -58,6 +84,22 @@ export default async function handler(req, res) {
     // Validate JSON response
     if (!isJson) {
       const textResponse = await response.text();
+
+      // Check if it's a Cloudflare challenge page
+      if (
+        textResponse.includes('Just a moment') ||
+        textResponse.includes('cf-browser-verification') ||
+        textResponse.includes('challenge-platform')
+      ) {
+        return res.status(503).json({
+          error: 'Cloudflare protection detected',
+          detail:
+            'The API is protected by Cloudflare and is blocking automated requests. This may require manual verification or a different approach to access the API.',
+          suggestion:
+            'Try using the API directly with curl or Postman, or contact the API provider for server-to-server access.',
+        });
+      }
+
       return res.status(500).json({
         error: 'Invalid API response',
         detail: `Expected JSON but received: ${textResponse.substring(0, 200)}`,
